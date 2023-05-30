@@ -225,7 +225,7 @@ mod StarknetId {
     fn mint(starknet_id: felt252) {
         let to = get_caller_address();
         assert(!starknet_id.is_zero(), 'starknet_id must be non-zero');
-        // assert_nn(starknet_id);  starknet_id < 2**128
+        // todo: assert_nn(starknet_id);  starknet_id < 2**128
         ERC721::_mint(to, u256_from_felt252(starknet_id));
     }
 

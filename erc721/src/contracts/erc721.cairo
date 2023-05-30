@@ -312,9 +312,8 @@ mod ERC721 {
 
         // Update token_id owner
         _owners::write(token_id, to);
-
-        // Emit event
-        // Transfer(Zeroable::zero(), to, token_id);
+    // Emit event
+    // Transfer(Zeroable::zero(), to, token_id);
     }
 
     #[internal]
