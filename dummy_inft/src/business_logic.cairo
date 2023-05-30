@@ -1,2 +1,1 @@
-mod serde;
 mod interface;

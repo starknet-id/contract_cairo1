@@ -4,6 +4,7 @@ mod StarknetId {
     use traits::{Into, TryInto};
     use option::OptionTrait;
     use integer::{u256, u256_from_felt252};
+    use zeroable::Zeroable;
 
     use starknet::ContractAddress;
     use starknet::get_caller_address;
@@ -11,6 +12,7 @@ mod StarknetId {
 
     use starknetid::business_logic::storage::Store;
     use erc721::contracts::erc721::ERC721;
+    use token_uri::contracts::token_uri::TokenUri;
 
     // Dispatchers
     use starknetid::business_logic::inft::INFTDispatcher;
@@ -28,40 +30,24 @@ mod StarknetId {
     //
 
     #[event]
-    fn UserDataUpdate(
-        starknet_id: felt252,
-        field: felt252,
-        data: felt252,
-    ) {}
+    fn UserDataUpdate(starknet_id: felt252, field: felt252, data: felt252, ) {}
 
     #[event]
-    fn ExtendedUserDataUpdate(
-        starknet_id: felt252,
-        field: felt252,
-        data: Array<felt252>,
-    ) {}
+    fn ExtendedUserDataUpdate(starknet_id: felt252, field: felt252, data: Array<felt252>, ) {}
 
     #[event]
     fn VerifierDataUpdate(
-        starknet_id: felt252,
-        field: felt252,
-        data: felt252,
-        verifier: ContractAddress,
+        starknet_id: felt252, field: felt252, data: felt252, verifier: ContractAddress, 
     ) {}
 
     #[event]
     fn ExtendedVerifierDataUpdate(
-        starknet_id: felt252,
-        author: ContractAddress,
-        field: felt252,
-        data: Array<felt252>,
+        starknet_id: felt252, author: ContractAddress, field: felt252, data: Array<felt252>, 
     ) {}
 
     #[event]
     fn on_inft_equipped(
-        inft_contract: ContractAddress,
-        inft_id: felt252,
-        starknet_id: ContractAddress,
+        inft_contract: ContractAddress, inft_id: felt252, starknet_id: ContractAddress, 
     ) {}
 
     //
@@ -69,11 +55,12 @@ mod StarknetId {
     //
 
     #[external]
-    fn initializer(proxy_admin: ContractAddress, uri_base: Array<felt252>) {
+    fn initializer(uri_base: Span<felt252>) {
         // todo: add proxy when available on OZ
+        // proxy_admin: ContractAddress,
         // Proxy.initializer(proxy_admin);
         ERC721::initializer('Starknet.id', 'ID');
-        // todo: set_token_uri_base_util(uri_base_len, uri_base);
+        TokenUri::set_token_uri_base_util(uri_base);
     }
 
     //
@@ -115,50 +102,48 @@ mod StarknetId {
         ERC721::is_approved_for_all(owner, operator)
     }
 
-    // todo:
-    // #[view]
-    // fn tokenURI(token_id: u256) -> Array<felt252> {
-         // https://goerli.indexer.starknet.id/uri?id=
-        //     let (arr_len, arr) = read_base_token_uri(0);
-        //     let (size) = append_number_ascii(tokenId, arr + arr_len);
-        //     return (arr_len + size, arr);
-    // }
+    #[view]
+    fn tokenURI(token_id: u256) -> Array<felt252> {
+        let mut arr = TokenUri::read_base_token_uri(0);
+        TokenUri::append_number_ascii(token_id, ref arr);
+        arr
+    //  https://goerli.indexer.starknet.id/uri?id=
+    //     let (arr_len, arr) = read_base_token_uri(0);
+    //     let (size) = append_number_ascii(tokenId, arr + arr_len);
+    //     return (arr_len + size, arr);
+    }
 
     // #[view]
     // fn supportsInterface(interface_id: u32) -> felt252 {
     //     ERC721::supports_interface(interface_id)
     // }
 
-
     //
     // STARKNET ID specific
     //
 
     #[view]
-    fn get_user_data(
-        starknet_id: felt252,
-        field: felt252,
-    ) -> felt252 {
+    fn get_user_data(starknet_id: felt252, field: felt252, ) -> felt252 {
         user_data::read((starknet_id, field))
     }
 
     #[view]
     fn get_extended_user_data(
-        starknet_id: felt252,
-        field: felt252,
-        length: felt252,
+        starknet_id: felt252, field: felt252, length: felt252, 
     ) -> Array<felt252> {
         let mut params = ArrayTrait::new();
         params.append(starknet_id);
         params.append(field);
-        return Store::get(Store::USER_DATA_ADDR, params, 0_u8, length.try_into().expect('error converting felt to usize'));
+        return Store::get(
+            Store::USER_DATA_ADDR,
+            params,
+            0_u8,
+            length.try_into().expect('error converting felt to usize')
+        );
     }
 
     #[view]
-    fn get_unbounded_user_data(
-        starknet_id: felt252,
-        field: felt252,
-    ) -> Array<felt252> {
+    fn get_unbounded_user_data(starknet_id: felt252, field: felt252, ) -> Array<felt252> {
         let mut params = ArrayTrait::new();
         params.append(starknet_id);
         params.append(field);
@@ -167,32 +152,30 @@ mod StarknetId {
 
     #[view]
     fn get_verifier_data(
-        starknet_id: felt252,
-        field: felt252,
-        address: ContractAddress
+        starknet_id: felt252, field: felt252, address: ContractAddress
     ) -> felt252 {
         verifier_data::read((starknet_id, field, address))
     }
 
     #[view]
     fn get_extended_verifier_data(
-        starknet_id: felt252,
-        field: felt252,
-        length: felt252,
-        address: ContractAddress
+        starknet_id: felt252, field: felt252, length: felt252, address: ContractAddress
     ) -> Array<felt252> {
         let mut params = ArrayTrait::new();
         params.append(starknet_id);
         params.append(field);
         params.append(address.into());
-        return Store::get(Store::VERIFIER_DATA_ADDR, params, 0_u8, length.try_into().expect('error converting felt to usize'));
+        return Store::get(
+            Store::VERIFIER_DATA_ADDR,
+            params,
+            0_u8,
+            length.try_into().expect('error converting felt to usize')
+        );
     }
 
     #[view]
     fn get_unbounded_verifier_data(
-        starknet_id: felt252,
-        field: felt252,
-        address: ContractAddress
+        starknet_id: felt252, field: felt252, address: ContractAddress
     ) -> Array<felt252> {
         let mut params = ArrayTrait::new();
         params.append(starknet_id);
@@ -203,8 +186,7 @@ mod StarknetId {
 
     #[view]
     fn get_equipped_starknet_id(
-        inft_contract: ContractAddress,
-        inft_id: felt252,
+        inft_contract: ContractAddress, inft_id: felt252, 
     ) -> ContractAddress {
         inft_equipped_by::read((inft_contract, inft_id))
     }
@@ -214,38 +196,37 @@ mod StarknetId {
     //
 
     #[external]
-    fn approve(
-        to: ContractAddress,
-        starknet_id: u256,
-    ) {
+    fn approve(to: ContractAddress, starknet_id: u256, ) {
         ERC721::approve(to, starknet_id)
     }
 
     #[external]
-    fn setApprovalForAll(
-        operator: ContractAddress,
-        approved: bool,
-    ) {
+    fn setApprovalForAll(operator: ContractAddress, approved: bool, ) {
         ERC721::set_approval_for_all(operator, approved)
     }
 
     #[external]
-    fn transferFrom(
-        _from: ContractAddress,
-        to: ContractAddress,
-        starknet_id: u256,
-    ) {
+    fn transferFrom(_from: ContractAddress, to: ContractAddress, starknet_id: u256, ) {
         ERC721::transfer_from(_from, to, starknet_id)
     }
 
     #[external]
     fn safeTransferFrom(
-        _from: ContractAddress,
-        to: ContractAddress,
-        starknet_id: u256,
-        data: Span<felt252>,
+        _from: ContractAddress, to: ContractAddress, starknet_id: u256, data: Span<felt252>, 
     ) {
         ERC721::safe_transfer_from(_from, to, starknet_id, data)
+    }
+
+    //
+    // NFT specific
+    //
+
+    #[external]
+    fn mint(starknet_id: felt252) {
+        let to = get_caller_address();
+        assert(!starknet_id.is_zero(), 'starknet_id must be non-zero');
+        // assert_nn(starknet_id);  starknet_id < 2**128
+        ERC721::_mint(to, u256_from_felt252(starknet_id));
     }
 
     //
@@ -253,24 +234,16 @@ mod StarknetId {
     //
 
     #[external]
-    fn set_user_data(
-        starknet_id: felt252,
-        field: felt252,
-        data: felt252
-    ) {
+    fn set_user_data(starknet_id: felt252, field: felt252, data: felt252) {
         let owner = ERC721::owner_of(u256_from_felt252(starknet_id));
         let caller = get_caller_address();
-        assert(owner == caller, 'caller is not owner'); 
+        assert(owner == caller, 'caller is not owner');
         UserDataUpdate(starknet_id, field, data);
         user_data::write((starknet_id, field), data);
     }
 
     #[external]
-    fn set_extended_user_data(
-        starknet_id: felt252,
-        field: felt252,
-        data: Array<felt252>
-    ) {
+    fn set_extended_user_data(starknet_id: felt252, field: felt252, data: Array<felt252>) {
         let owner = ERC721::owner_of(u256_from_felt252(starknet_id));
         let caller = get_caller_address();
         assert(owner == caller, 'caller is not owner');
@@ -283,22 +256,14 @@ mod StarknetId {
     }
 
     #[external]
-    fn set_verifier_data(
-        starknet_id: felt252,
-        field: felt252,
-        data: felt252
-    ) {
+    fn set_verifier_data(starknet_id: felt252, field: felt252, data: felt252) {
         let address = get_caller_address();
         VerifierDataUpdate(starknet_id, field, data, address);
-        verifier_data::write((starknet_id, field, address), data);        
+        verifier_data::write((starknet_id, field, address), data);
     }
 
     #[external]
-    fn set_extended_verifier_data(
-        starknet_id: felt252,
-        field: felt252,
-        data: Array<felt252>
-    ) {
+    fn set_extended_verifier_data(starknet_id: felt252, field: felt252, data: Array<felt252>) {
         let author = get_caller_address();
 
         let mut params = ArrayTrait::new();
@@ -307,14 +272,11 @@ mod StarknetId {
         params.append(author.into());
         Store::set(Store::VERIFIER_DATA_ADDR, params, 0_u8, data.span());
 
-        ExtendedVerifierDataUpdate(starknet_id, author, field, data);       
+        ExtendedVerifierDataUpdate(starknet_id, author, field, data);
     }
 
     #[external]
-    fn equip(
-        inft_contract: ContractAddress,
-        inft_id: felt252,
-    ) {
+    fn equip(inft_contract: ContractAddress, inft_id: felt252, ) {
         // ensure caller controls the starknet_id owning this iNFT
         let starknet_id_owner = INFTDispatcher {
             contract_address: inft_contract
@@ -327,14 +289,11 @@ mod StarknetId {
         inft_equipped_by::write((inft_contract, inft_id), starknet_id_owner);
 
         // emit event
-        on_inft_equipped(inft_contract, inft_id, starknet_id_owner);       
+        on_inft_equipped(inft_contract, inft_id, starknet_id_owner);
     }
 
     #[external]
-    fn unequip(
-        inft_contract: ContractAddress,
-        inft_id: felt252,
-    ) {
+    fn unequip(inft_contract: ContractAddress, inft_id: felt252, ) {
         // ensure caller controls the starknet_id owning this iNFT
         let starknet_id_owner = INFTDispatcher {
             contract_address: inft_contract
@@ -347,6 +306,6 @@ mod StarknetId {
         inft_equipped_by::write((inft_contract, inft_id), ContractAddressZeroable::zero());
 
         // emit event
-        on_inft_equipped(inft_contract, inft_id, ContractAddressZeroable::zero());       
+        on_inft_equipped(inft_contract, inft_id, ContractAddressZeroable::zero());
     }
 }

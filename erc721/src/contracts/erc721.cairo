@@ -263,8 +263,8 @@ mod ERC721 {
     fn initializer(name_: felt252, symbol_: felt252) {
         _name::write(name_);
         _symbol::write(symbol_);
-        // erc165::ERC165::register_interface(erc721::interface::IERC721_ID);
-        // erc165::ERC165::register_interface(erc721::interface::IERC721_METADATA_ID);
+    // erc165::ERC165::register_interface(erc721::interface::IERC721_ID);
+    // erc165::ERC165::register_interface(erc721::interface::IERC721_METADATA_ID);
     }
 
     #[internal]
@@ -302,7 +302,7 @@ mod ERC721 {
         ApprovalForAll(owner, operator, approved);
     }
 
-    #[internal]
+    #[external]
     fn _mint(to: ContractAddress, token_id: u256) {
         assert(!to.is_zero(), 'ERC721: invalid receiver');
         assert(!_exists(token_id), 'ERC721: token already minted');
@@ -314,7 +314,7 @@ mod ERC721 {
         _owners::write(token_id, to);
 
         // Emit event
-        Transfer(Zeroable::zero(), to, token_id);
+        // Transfer(Zeroable::zero(), to, token_id);
     }
 
     #[internal]

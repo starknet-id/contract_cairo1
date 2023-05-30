@@ -5,17 +5,23 @@ mod Store {
     use starknet::SyscallResultTrait;
     use starknet::StorageBaseAddress;
 
-    const USER_DATA_ADDR : felt252 = 1043580099640415304067929596039389735845630832049981224284932480360577081706;
-    const VERIFIER_DATA_ADDR : felt252 = 304878986635684253299743444353489138340069571156984851619649640349195152192;
+    const USER_DATA_ADDR: felt252 =
+        1043580099640415304067929596039389735845630832049981224284932480360577081706;
+    const VERIFIER_DATA_ADDR: felt252 =
+        304878986635684253299743444353489138340069571156984851619649640349195152192;
 
     fn compute_base_address(fn_name: felt252, params: Array<felt252>) -> StorageBaseAddress {
         let mut _params = params;
-        let mut tmp: felt252 = hash::LegacyHash::hash(fn_name, _params.pop_front().expect('error computing hash'));
+        let mut tmp: felt252 = hash::LegacyHash::hash(
+            fn_name, _params.pop_front().expect('error computing hash')
+        );
         loop {
             if _params.len() == 0 {
-                break();
+                break ();
             }
-            let hash = hash::LegacyHash::hash(tmp, _params.pop_front().expect('error computing hash'));
+            let hash = hash::LegacyHash::hash(
+                tmp, _params.pop_front().expect('error computing hash')
+            );
             let tmp = hash;
         };
         starknet::storage_base_address_from_felt252(tmp)
@@ -41,11 +47,13 @@ mod Store {
             return ();
         }
 
-        value.append(
-            starknet::storage_read_syscall(
-                address_domain, starknet::storage_address_from_base_and_offset(base, offset)
-            ).unwrap_syscall()
-        );
+        value
+            .append(
+                starknet::storage_read_syscall(
+                    address_domain, starknet::storage_address_from_base_and_offset(base, offset)
+                )
+                    .unwrap_syscall()
+            );
 
         return _get(address_domain, base, ref value, offset + 1, length);
     }
@@ -65,7 +73,10 @@ mod Store {
         ref value: Array<felt252>,
         offset: u8,
     ) {
-        let to_add = starknet::storage_read_syscall(address_domain, starknet::storage_address_from_base_and_offset(base, offset)).unwrap_syscall();
+        let to_add = starknet::storage_read_syscall(
+            address_domain, starknet::storage_address_from_base_and_offset(base, offset)
+        )
+            .unwrap_syscall();
         if to_add == 0 {
             return ();
         }

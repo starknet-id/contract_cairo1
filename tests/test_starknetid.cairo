@@ -1,31 +1,79 @@
 use array::ArrayTrait;
 use result::ResultTrait;
 
+use starknet::ContractAddress;
+use starknet::contract_address_const;
+
+use starknetid::contracts::starknetid::StarknetId;
+
+use cheatcodes::RevertedTransactionTrait;
+use protostar_print::PrintTrait;
+
+
 #[test]
-fn test_increase_balance() {
+#[available_gas(2000000)]
+fn test_set_verifier_data() {
+    // deploy starknetid contract otherwhise we cannot use start_prank
     let contract_address = deploy_contract('starknetid', @ArrayTrait::new()).unwrap();
+    start_prank(123, contract_address).unwrap();
 
-    let result_before = call(contract_address, 'get_balance', @ArrayTrait::new()).unwrap();
-    assert(*result_before.at(0_u32) == 0, 'Invalid balance');
+    let token_id = 1;
+    let _type = 19256242726728292; // # Discord
+    let data = 58596348113441803209962597; // # 0xBenaparte
 
+    // Should set verifier data
     let mut invoke_calldata = ArrayTrait::new();
-    invoke_calldata.append(42);
-    invoke(contract_address, 'increase_balance', @invoke_calldata).unwrap();
+    invoke_calldata.append(token_id);
+    invoke_calldata.append(_type);
+    invoke_calldata.append(data);
+    invoke(contract_address, 'set_verifier_data', @invoke_calldata).unwrap();
 
-    let result_after = call(contract_address, 'get_balance', @ArrayTrait::new()).unwrap();
-    assert(*result_after.at(0_u32) == 42, 'Invalid balance');
+    // Should return the correct data
+    let mut calldata = ArrayTrait::new();
+    calldata.append(token_id);
+    calldata.append(_type);
+    calldata.append(123);
+    let result = call(contract_address, 'get_verifier_data', @calldata).unwrap();
+    assert(*result.at(0_u32) == data, 'Invalid data');
+
+    // Should return 0 if no data is set
+    let token_id_2 = 2;
+    let type_2 = 'Twitter';
+    let data_2 = 'Thomas';
+    let mut calldata = ArrayTrait::new();
+    calldata.append(token_id_2);
+    calldata.append(type_2);
+    calldata.append(123);
+    let result = call(contract_address, 'get_verifier_data', @calldata).unwrap();
+    assert(*result.at(0_u32) == 0, 'Should return 0');
+
+    stop_prank(123).unwrap();
 }
 
 #[test]
-fn test_cannot_increase_balance_with_zero_value() {
+#[available_gas(2000000)]
+fn test_mint() {
+    // deploy starknetid contract otherwhise we cannot use start_prank
     let contract_address = deploy_contract('starknetid', @ArrayTrait::new()).unwrap();
+    start_prank(123, contract_address).unwrap();
 
-    let result_before = call(contract_address, 'get_balance', @ArrayTrait::new()).unwrap();
-    assert(*result_before.at(0_u32) == 0, 'Invalid balance');
+    let token_id = 1;
 
+    // Should mint a new starknetid for account 123
     let mut invoke_calldata = ArrayTrait::new();
-    invoke_calldata.append(0);
-    let invoke_result = invoke(contract_address, 'increase_balance', @invoke_calldata);
+    invoke_calldata.append(token_id);
+    match invoke(contract_address, 'mint', @invoke_calldata) {
+        Result::Ok(x) => 'minted successfully'.print(),
+        Result::Err(x) => {
+            'reverted'.print();
+            x.panic_data.print();
+        }
+    }
 
-    assert(invoke_result.is_err(), 'Invoke should fail');
+    let mut calldata = ArrayTrait::new();
+    calldata.append(token_id);
+    let result = call(contract_address, 'owner_of', @calldata).unwrap();
+    assert(*result.at(0_u32) == 123, 'Invalid owner');
+
+    stop_prank(123).unwrap();
 }
