@@ -1,5 +1,6 @@
 use array::ArrayTrait;
 use result::ResultTrait;
+use traits::{Into, TryInto};
 
 use starknet::ContractAddress;
 use starknet::contract_address_const;
@@ -8,7 +9,6 @@ use starknetid::contracts::starknetid::StarknetId;
 
 use cheatcodes::RevertedTransactionTrait;
 use protostar_print::PrintTrait;
-
 
 #[test]
 #[available_gas(2000000)]
@@ -130,4 +130,88 @@ fn test_set_user_data() {
     assert(*identity_data.at(0_u32) == 0, 'Should return 0');
 
     stop_prank(123).unwrap();
+}
+
+#[test]
+#[available_gas(2000000)]
+fn test_uri() {
+    // deploy starknetid contract
+    let contract_address = deploy_contract('starknetid', @ArrayTrait::new()).unwrap();
+    start_prank(123, contract_address).unwrap();
+
+    // Should initialize with the correct uri
+    let mut arr = ArrayTrait::new();
+    let mut invoke_calldata = build_token_uri_arr(arr);
+    match invoke(contract_address, 'initializer', @invoke_calldata) {
+        Result::Ok(x) => 'initialized successfully'.print(),
+        Result::Err(x) => {
+            'reverted'.print();
+            x.panic_data.print();
+        }
+    }
+
+    // Mint a new starknet_id for account 123
+    let token_id = 256;
+    let mut invoke_calldata = ArrayTrait::new();
+    invoke_calldata.append(token_id);
+    match invoke(contract_address, 'mint', @invoke_calldata) {
+        Result::Ok(x) => 'minted starknetid successfully'.print(),
+        Result::Err(x) => {
+            'reverted'.print();
+            x.panic_data.print();
+        }
+    }
+
+    // Should fetch the correct uri for starknetid 256
+    let mut calldata = ArrayTrait::new();
+    calldata.append(token_id);
+    calldata.append(0);
+    let uri = call(contract_address, 'tokenURI', @calldata).unwrap();
+
+    assert(*uri.at(0_u32) == 38, 'Invalid uri len');
+    assert(*uri.at(36_u32) == 48 + 2, 'Invalid uri char');
+    assert(*uri.at(37_u32) == 48 + 5, 'Invalid uri char');
+    assert(*uri.at(38_u32) == 48 + 6, 'Invalid uri char');
+
+    stop_prank(123).unwrap();
+}
+
+fn build_token_uri_arr(mut arr: Array<felt252>) -> Array<felt252> {
+    arr.append(35); // we need to add the array len
+    arr.append(104);
+    arr.append(116);
+    arr.append(116);
+    arr.append(112);
+    arr.append(115);
+    arr.append(58);
+    arr.append(47);
+    arr.append(47);
+    arr.append(105);
+    arr.append(110);
+    arr.append(100);
+    arr.append(101);
+    arr.append(120);
+    arr.append(101);
+    arr.append(114);
+    arr.append(46);
+    arr.append(115);
+    arr.append(116);
+    arr.append(97);
+    arr.append(114);
+    arr.append(107);
+    arr.append(110);
+    arr.append(101);
+    arr.append(116);
+    arr.append(46);
+    arr.append(105);
+    arr.append(100);
+    arr.append(47);
+    arr.append(117);
+    arr.append(114);
+    arr.append(105);
+    arr.append(63);
+    arr.append(105);
+    arr.append(100);
+    arr.append(61);
+    arr
 }

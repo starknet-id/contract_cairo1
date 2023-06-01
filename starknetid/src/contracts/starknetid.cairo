@@ -107,10 +107,6 @@ mod StarknetId {
         let mut arr = TokenUri::read_base_token_uri(0);
         TokenUri::append_number_ascii(token_id, ref arr);
         arr
-    //  https://goerli.indexer.starknet.id/uri?id=
-    //     let (arr_len, arr) = read_base_token_uri(0);
-    //     let (size) = append_number_ascii(tokenId, arr + arr_len);
-    //     return (arr_len + size, arr);
     }
 
     // #[view]
@@ -143,7 +139,7 @@ mod StarknetId {
     }
 
     #[view]
-    fn get_unbounded_user_data(starknet_id: felt252, field: felt252, ) -> Array<felt252> {
+    fn get_unbounded_user_data(starknet_id: felt252, field: felt252) -> Array<felt252> {
         let mut params = ArrayTrait::new();
         params.append(starknet_id);
         params.append(field);
