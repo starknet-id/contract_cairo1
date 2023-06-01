@@ -33,15 +33,15 @@ mod TokenUri {
     #[external]
     fn set_token_uri_base_util(arr: Span<felt252>) {
         let mut arr = arr;
-        if arr.len() == 0 {
-            return ();
+        loop {
+            if arr.len() == 0 {
+                break();
+            }
+            token_uri_base::write(arr.len().into() - 1, 1 + *arr.pop_back().expect('error retrieving last element'));
         }
-
-        token_uri_base::write(arr.len().into(), 1 + *arr.pop_back().expect('error'));
-        return set_token_uri_base_util(arr);
     }
 
-    #[external]
+    #[view]
     fn append_number_ascii(num: u256, ref arr: Array<felt252>) {
         let (q, r) = u256_safe_divmod(num, u256_as_non_zero(u256_from_felt252(10)));
         let digit = r.low + 48; // ascii
@@ -52,8 +52,6 @@ mod TokenUri {
         }
 
         let added_len = append_number_ascii(q, ref arr);
-        // let added_len_u32 = u32_try_from_felt252(added_len).expect('error converting felt to u32');
-        // assert arr[added_len] = digit;
         arr.append(digit.into());
     }
 }
