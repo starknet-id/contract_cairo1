@@ -20,8 +20,6 @@ mod StarknetId {
 
     struct Storage {
         starknet_id_data: LegacyMap::<(felt252, felt252, ContractAddress), felt252>,
-        user_data: LegacyMap::<(felt252, felt252), felt252>,
-        verifier_data: LegacyMap::<(felt252, felt252, ContractAddress), felt252>,
         inft_equipped_by: LegacyMap::<(ContractAddress, felt252), ContractAddress>,
     }
 
@@ -109,6 +107,7 @@ mod StarknetId {
         arr
     }
 
+    // todo: uncomment when we can use easily OZ's package
     // #[view]
     // fn supportsInterface(interface_id: u32) -> felt252 {
     //     ERC721::supports_interface(interface_id)
@@ -120,7 +119,16 @@ mod StarknetId {
 
     #[view]
     fn get_user_data(starknet_id: felt252, field: felt252, ) -> felt252 {
-        user_data::read((starknet_id, field))
+        let mut params = ArrayTrait::new();
+        params.append(starknet_id);
+        params.append(field);
+        let user_data = Store::get(
+            Store::USER_DATA_ADDR,
+            params,
+            0_u8,
+            1.try_into().expect('error converting felt to usize')
+        );
+        return *user_data.at(0);
     }
 
     #[view]
@@ -150,7 +158,18 @@ mod StarknetId {
     fn get_verifier_data(
         starknet_id: felt252, field: felt252, address: ContractAddress
     ) -> felt252 {
-        verifier_data::read((starknet_id, field, address))
+        // verifier_data::read((starknet_id, field, address))
+        let mut params = ArrayTrait::new();
+        params.append(starknet_id);
+        params.append(field);
+        params.append(address.into());
+        let verifier_data = Store::get(
+            Store::VERIFIER_DATA_ADDR,
+            params,
+            0_u8,
+            1.try_into().expect('error converting felt to usize')
+        );
+        return *verifier_data.at(0);
     }
 
     #[view]
@@ -234,8 +253,15 @@ mod StarknetId {
         let owner = ERC721::owner_of(u256_from_felt252(starknet_id));
         let caller = get_caller_address();
         assert(owner == caller, 'caller is not owner');
+
+        let mut params = ArrayTrait::new();
+        params.append(starknet_id);
+        params.append(field);
+        let mut data_arr = ArrayTrait::new();
+        data_arr.append(data);
+        Store::set(Store::USER_DATA_ADDR, params, 0_u8, data_arr.span());
+
         UserDataUpdate(starknet_id, field, data);
-        user_data::write((starknet_id, field), data);
     }
 
     #[external]
@@ -254,8 +280,16 @@ mod StarknetId {
     #[external]
     fn set_verifier_data(starknet_id: felt252, field: felt252, data: felt252) {
         let address = get_caller_address();
+
+        let mut params = ArrayTrait::new();
+        params.append(starknet_id);
+        params.append(field);
+        params.append(address.into());
+        let mut data_arr = ArrayTrait::new();
+        data_arr.append(data);
+        Store::set(Store::VERIFIER_DATA_ADDR, params, 0_u8, data_arr.span());
+
         VerifierDataUpdate(starknet_id, field, data, address);
-        verifier_data::write((starknet_id, field, address), data);
     }
 
     #[external]

@@ -35,9 +35,11 @@ mod TokenUri {
         let mut arr = arr;
         loop {
             if arr.len() == 0 {
-                break();
+                break ();
             }
-            token_uri_base::write(arr.len().into() - 1, 1 + *arr.pop_back().expect('error retrieving last element'));
+            token_uri_base::write(
+                arr.len().into() - 1, 1 + *arr.pop_back().expect('error retrieving last element')
+            );
         }
     }
 

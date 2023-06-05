@@ -22,7 +22,7 @@ mod Store {
             let hash = hash::LegacyHash::hash(
                 tmp, _params.pop_front().expect('error computing hash')
             );
-            let tmp = hash;
+            tmp = hash;
         };
         starknet::storage_base_address_from_felt252(tmp)
     }
