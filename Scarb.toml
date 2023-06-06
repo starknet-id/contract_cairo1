@@ -1,0 +1,9 @@
+[package]
+name = "starknetid_contract"
+version = "0.1.0"
+
+[dependencies]
+starknetid = { path = "starknetid" }
+token_uri = { path = "token_uri" }
+dummy_inft = { path = "dummy_inft" }
+erc721 = { path = "erc721" }
